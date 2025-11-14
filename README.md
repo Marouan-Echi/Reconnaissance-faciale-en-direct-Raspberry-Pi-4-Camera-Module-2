@@ -1,245 +1,42 @@
-# Reconnaissance faciale en direct — Raspberry Pi 4 + Camera Module 2
+# dataset — conventions et bonnes pratiques
 
-Ce dépôt permet d'exécuter une reconnaissance faciale en temps réel (Raspberry Pi + Camera Module). Le script principal est `face_recognition_live.py`.
+Ce dossier contient les photos des personnes connues. Chaque personne doit avoir son propre sous-dossier. Le script principal parcourt `dataset/` pour générer les encodages (fichier `face_encodings.pkl`).
 
-Ce README a été réorganisé pour expliquer clairement comment préparer les dossiers de données :
+Conventions recommandées
 
-- `dataset/` : un sous-dossier par personne contenant ses photos (ex. `dataset/Marouan/`).
-- `unknown_faces/` : images capturées automatiquement pour les visages non reconnus.
+- Structure : `dataset/<NomPersonne>/` (ex. `dataset/Marouan/`).
+- Noms de dossiers : utilisez des caractères ASCII simples, sans espaces (ex. `Alice_Smith` ou `Marouan`).
+- Formats de fichiers : `.jpg`, `.jpeg`, `.png` (préférez `.jpg` pour économiser l'espace).
+- Nombre d'images par personne : 5–20 images pour une bonne couverture d'angles et d'éclairages.
+- Qualité des images : visage centré, taille suffisante du visage dans l'image, évitez le flou.
 
-## Arborescence recommandée
+Conseils pratiques
 
-Exemple :
+- Variez les photos : face de face, profil léger, différentes expressions et éclairages.
+- Évitez les photos de groupe ou recadrées de très loin (le visage doit être identifiable).
+- Si vous ajoutez des images depuis `unknown_faces/`, vérifiez manuellement l'identité avant de les déplacer.
 
-```
-project-root/
-├─ face_recognition_live.py       # script principal
-├─ dataset/                       # dossiers par personne (à créer)
-│  ├─ Alice/
-│  │  ├─ img01.jpg
-│  │  └─ img02.jpg
-│  └─ Bob/
-│     ├─ img01.jpg
-│     └─ img02.jpg
-├─ unknown_faces/                 # images des visages non reconnus
-└─ face_encodings.pkl             # encodages générés par le script
-```
+Commandes utiles
 
-## But du README modifié
-
-1. Expliquer comment créer et organiser `dataset/` (un dossier par personne).
-2. Expliquer le rôle de `unknown_faces/`.
-3. Donner des conseils d'images (formats, nombre, qualité) et commandes utiles.
-
-## Comment préparer `dataset/` et `unknown_faces/`
-
-- Créer `dataset/` si absent. Puis, pour chaque personne, créer un dossier avec son nom (ex. `dataset/Marouan/`) et y placer des photos.
-- Créer `unknown_faces/` (le script peut aussi le créer automatiquement s'il n'existe pas).
-
-Commandes utiles (Raspberry Pi / Linux) :
+Linux / Raspberry Pi :
 
 ```bash
 mkdir -p dataset/Marouan
-mkdir -p unknown_faces
+cp /chemin/vers/photo1.jpg dataset/Marouan/
 ```
 
-Commandes PowerShell (Windows) :
+PowerShell (Windows) :
 
 ```powershell
-New-Item -ItemType Directory -Path dataset\\Marouan -Force
-New-Item -ItemType Directory -Path unknown_faces -Force
+New-Item -ItemType Directory -Path dataset\Marouan -Force
+Copy-Item C:\chemin\vers\photo1.jpg -Destination dataset\Marouan\
 ```
 
-Remarques pour les photos :
+Après ajout/modification d'images
 
-- Formats acceptés : .jpg, .jpeg, .png (préférez jpg pour la place disque).
-- Nombre conseillé par personne : 5–20 images.
-- Variez l'angle, l'expression, l'éclairage et les accessoires (lunettes, cheveux relevés, etc.).
-- Évitez les images floues ou avec visage très petit dans l'image.
+1. Supprimez `face_encodings.pkl` si vous souhaitez forcer la régénération des encodages au prochain lancement ; sinon, le script peut proposer de recalculer automatiquement.
+2. Lancez `face_recognition_live.py` pour reconstruire le cache si nécessaire.
 
-## Exemple : ajouter une nouvelle personne
+Respect de la vie privée
 
-1. Créer le dossier : `dataset/NomPersonne/`.
-2. Ajouter 5–20 images du visage de cette personne.
-3. Relancer `face_recognition_live.py`. Au premier lancement (ou si le cache est régénéré), le script calcule les encodages et crée/actualise `face_encodings.pkl`.
-
-## Lancement (exemples)
-
-Linux / Raspberry Pi (avec venv) :
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-# installer les dépendances nécessaires (sur Raspberry Pi) :
-# sudo apt install -y python3-picamera2 python3-opencv libatlas-base-dev libopenblas-dev liblapack-dev cmake build-essential
-pip install face_recognition dlib imutils opencv-python
-python3 face_recognition_live.py
-```
-
-Windows (si vous testez localement avec une webcam) :
-
-```powershell
-python -m venv venv
-venv\\Scripts\\Activate.ps1
-pip install --upgrade pip
-pip install face_recognition opencv-python imutils
-python face_recognition_live.py
-```
-
-Note : l'installation de `dlib`/`face_recognition` peut requérir des dépendances système et éventuellement de la mémoire (compilation). Sur Raspberry Pi, suivez les instructions spécifiques à votre distribution.
-
-## Que fait `unknown_faces/` ?
-
-- Chaque visage détecté et non reconnu est enregistré automatiquement dans `unknown_faces/` (nom par timestamp).
-- Utilisez ce dossier pour inspecter manuellement ces images et, si approprié, ajouter certaines d'entre elles au `dataset/` sous le nom d'une personne (après vérification) pour améliorer la base de données.
-
-## Bonnes pratiques
-
-- Gardez les dossiers `dataset/` organisés : un dossier = une identité.
-- Nommez les dossiers avec des caractères simples (pas d'espaces ni caractères accentués si vous le pouvez) : `Marouan`, `Alice_Smith`.
-- Sauvegardez `face_encodings.pkl` dans un emplacement sûr (il contient les encodages dérivés des images).
-
-## Dépannage rapide
-
-- Si la caméra ne fonctionne pas sur Raspberry Pi : tester avec `libcamera-hello`.
-- Si `face_recognition` échoue à l'installation : vérifier `cmake`, `build-essential`, BLAS/LAPACK et augmenter le swap pour la compilation.
-- Si performances faibles : réduire la résolution de la caméra et la taille des images traitées.
-
-## Confidentialité
-
-Les images et encodages sont des données sensibles. Protégez-les et respectez la réglementation locale (ex. RGPD en Europe) avant utilisation.
-
-## Résumé rapide
-
-1. Créez `dataset/<NomPersonne>/` et ajoutez 5–20 images par personne.
-2. Assurez-vous que `unknown_faces/` existe (ou laissez le script le créer).
-3. Installez les dépendances adaptées à votre plateforme.
-4. Lancez : `python3 face_recognition_live.py`.
-
----
-
-Si vous voulez, je peux :
-- ajouter un exemple `dataset/.gitkeep` ou un petit `dataset/README.md` expliquant la convention de nommage ;
-- créer automatiquement des dossiers vides pour vous (avec confirmation). 
-Indiquez ce que vous préférez.
- # Reconnaissance faciale en direct — Raspberry Pi 4 + Camera Module 2
-
-Ce projet réalise une reconnaissance faciale en temps réel sur Raspberry Pi 4 avec le module caméra officiel (Camera Module 2/2.1), en s’appuyant sur `Picamera2`, `OpenCV` et la librairie `face_recognition`.
-
-## Aperçu du projet
-- Script principal: `face_recognition_live.py`.
-- Fonctionnement:
-  - Encode les visages connus au premier lancement et stocke le cache dans `face_encodings.pkl` (`face_recognition_live.py:14–31`).
-  - Initialise la caméra via `Picamera2` (`face_recognition_live.py:39–41`).
-  - Détecte et reconnaît les visages sur chaque frame (`face_recognition_live.py:50–69`).
-  - Affiche le flux vidéo avec cadres et noms, touche `ESC` pour quitter (`face_recognition_live.py:70–76`).
-- Sauvegarde des inconnus: toute personne non reconnue est capturée et enregistrée dans `unknown_faces/unknown_<timestamp>.jpg`.
-
-## Arborescence
-- `face_recognition_live.py` — script principal.
-- `dataset/` — visages connus, un dossier par personne (ex. `dataset/Alice/`).
-- `unknown_faces/` — images des visages non reconnus (créé automatiquement).
-- `face_encodings.pkl` — cache des encodages (généré au premier lancement).
-- `venv/` — environnement virtuel Python (optionnel mais recommandé).
-
-## Prérequis matériel
-- Raspberry Pi 4 (4 Go recommandé), alimentation officielle.
-- Raspberry Pi Camera Module 2/2.1 connecté au port CSI et fixé correctement.
-- Carte microSD performante (A1/A2), réseau pour mises à jour.
-
-## Prérequis logiciel
-- Raspberry Pi OS Bookworm 64-bit (ou Bullseye) avec environnement bureau.
-- La caméra doit fonctionner avec `libcamera` (tester avec `libcamera-hello`).
-- Python ≥ 3.9 (le projet est compatible avec Python 3.11).
-
-## Installation
-1) Mettre à jour le système:
-```
-sudo apt update && sudo apt upgrade -y
-```
-2) Installer Picamera2, OpenCV et dépendances scientifiques:
-```
-sudo apt install -y python3-picamera2 python3-opencv libatlas-base-dev libopenblas-dev liblapack-dev cmake build-essential
-```
-3) (Optionnel) Paquets utiles si `dlib` doit être compilé:
-```
-sudo apt install -y git python3-dev dphys-swapfile
-```
-- Si la compilation `dlib` échoue par manque de mémoire, augmenter temporairement le swap (ex. 2048 Mo), puis redémarrer.
-
-4) Créer l’environnement Python et installer les librairies:
-```
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install face_recognition dlib imutils opencv-python
-```
-
-## Préparation des données (dataset)
-- Créer un dossier par personne dans `dataset/` (ex. `dataset/Alice/`, `dataset/Bob/`).
-- Mettre 5–20 photos par personne, visage bien centré, variétés d’angles et d’éclairage.
-- Au premier lancement, le script parcourt `dataset/`, calcule les encodages et crée `face_encodings.pkl`.
-
-## Lancement
-```
-source venv/bin/activate  # si vous utilisez l’environnement virtuel
-python3 face_recognition_live.py
-```
-- Une fenêtre "Reconnaissance faciale" apparaît.
-- Les visages reconnus affichent le nom au-dessus du cadre.
-- Les inconnus sont automatiquement capturés dans `unknown_faces/`.
-- Appuyer sur `ESC` pour quitter.
-
-## Paramètres clés
-- Résolution caméra:
-  - `picam2.configure(picam2.create_preview_configuration(main={"size": (640, 480)}))` (`face_recognition_live.py:40`).
-  - Réduire la résolution (ex. 320x240) pour de meilleures performances si nécessaire.
-- Dossiers:
-  - Visages connus: `KNOWN_FACES_DIR = "dataset"` (`face_recognition_live.py:8`).
-  - Inconnus: `UNKNOWN_FACES_DIR = "unknown_faces"` (création automatique, `face_recognition_live.py:9–10`).
-- Cache des encodages:
-  - `ENCODINGS_FILE = "face_encodings.pkl"` (`face_recognition_live.py:12`).
-
-## Vérifications & tests
-- Tester la caméra:
-```
-libcamera-hello
-```
-- Tester l’affichage OpenCV (depuis la session graphique):
-```
-python3 -c "import cv2, numpy as np; img=np.zeros((100,100,3),dtype=np.uint8); cv2.imshow('t',img); cv2.waitKey(1000)"
-```
-
-## Dépannage
-- Pas d’image caméra:
-  - Vérifier le branchement du ruban CSI, tester `libcamera-hello`, redémarrer.
-- Fenêtre OpenCV absente via SSH:
-  - Lancer depuis la session bureau (Wayland/X11) ou exporter l’affichage (`export DISPLAY=:0`).
-- Erreurs `dlib`/`face_recognition`:
-  - Installer/mettre à jour `cmake`, BLAS/LAPACK, augmenter le swap pendant la compilation.
-- Performances:
-  - Diminuer la résolution, améliorer l’éclairage, limiter le nombre de personnes dans `dataset/`.
-
-## Sécurité & confidentialité
-- Les images d’inconnus sont enregistrées automatiquement dans `unknown_faces/`.
-- Les données biométriques (encodages et images) doivent être protégées et utilisées dans le respect des lois (RGPD, etc.).
-
-## TL;DR (démarrage rapide)
-```
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y python3-picamera2 python3-opencv libatlas-base-dev libopenblas-dev liblapack-dev cmake build-essential
-python3 -m venv venv && source venv/bin/activate
-pip install --upgrade pip
-pip install face_recognition dlib imutils opencv-python
-# Ajouter des images dans dataset/<NomPersonne>/
-python3 face_recognition_live.py
-```
-
-## Références de code
-- Encodage initial: `face_recognition_live.py:14–31`
-- Initialisation caméra: `face_recognition_live.py:39–41`
-- Détection/reconnaissance: `face_recognition_live.py:50–69`
-- Affichage & sortie: `face_recognition_live.py:70–76`#   - R e c o n n a i s s a n c e - f a c i a l e - e n - d i r e c t - R a s p b e r r y - P i - 4 - C a m e r a - M o d u l e - 2 
- 
- 
+Les photos sont des données sensibles. Assurez-vous d'avoir le consentement des personnes avant de stocker ou traiter leurs images.
